@@ -2,10 +2,11 @@
 
 use std::time::Instant;
 
+use crate::backend::winit::dpi::PhysicalPosition;
+pub use crate::backend::winit::event::{ElementState, MouseButton, VirtualKeyCode};
+use crate::backend::winit::event::{KeyboardInput, WindowEvent};
+use crate::backend::winit::window::{CursorIcon, Window};
 use netcanv_renderer::paws::{vector, Point, Vector};
-use winit::dpi::PhysicalPosition;
-pub use winit::event::{ElementState, MouseButton, VirtualKeyCode};
-use winit::event::{KeyboardInput, WindowEvent};
 
 const MOUSE_BUTTON_COUNT: usize = 8;
 const KEY_CODE_COUNT: usize = 256;
@@ -20,9 +21,13 @@ pub struct Input {
    mouse_button_is_down: [bool; MOUSE_BUTTON_COUNT],
    mouse_button_just_pressed: [bool; MOUSE_BUTTON_COUNT],
    mouse_button_just_released: [bool; MOUSE_BUTTON_COUNT],
+
    active_mouse_area: u32,
    processed_mouse_area: u32,
    frame_mouse_area: u32,
+
+   previous_cursor: CursorIcon,
+   cursor: CursorIcon,
 
    // keyboard input
    char_buffer: Vec<char>,
@@ -45,9 +50,13 @@ impl Input {
          mouse_button_is_down: [false; MOUSE_BUTTON_COUNT],
          mouse_button_just_pressed: [false; MOUSE_BUTTON_COUNT],
          mouse_button_just_released: [false; MOUSE_BUTTON_COUNT],
+
          active_mouse_area: 0,
          processed_mouse_area: 0,
          frame_mouse_area: 0,
+
+         previous_cursor: CursorIcon::Default,
+         cursor: CursorIcon::Default,
 
          char_buffer: Vec::new(),
          key_just_typed: [false; KEY_CODE_COUNT],
@@ -126,6 +135,14 @@ impl Input {
       }
    }
 
+   /// Sets the cursor icon.
+   ///
+   /// The cursor icon is only updated when `finish_frame` is called, so this can be called
+   /// multiple times per frame without visible flickering.
+   pub fn set_cursor(&mut self, cursor: CursorIcon) {
+      self.cursor = cursor;
+   }
+
    /// Returns the characters that were typed during this frame.
    pub fn characters_typed(&self) -> &[char] {
       &self.char_buffer
@@ -166,7 +183,7 @@ impl Input {
          WindowEvent::MouseInput { button, state, .. } => self.process_mouse_input(*button, *state),
 
          WindowEvent::MouseWheel { delta, .. } => {
-            use winit::event::MouseScrollDelta::*;
+            use crate::backend::winit::event::MouseScrollDelta::*;
             self.mouse_scroll = match *delta {
                LineDelta(x, y) => Vector::new(x, y),
                PixelDelta(PhysicalPosition { x, y }) => Vector::new(x as f32, y as f32),
@@ -192,7 +209,7 @@ impl Input {
    /// Finishes an input frame. This resets pressed/released states, resets the previous mouse
    /// position, scroll delta, among other things, so this must be called at the end of each
    /// frame.
-   pub fn finish_frame(&mut self) {
+   pub fn finish_frame(&mut self, window: &Window) {
       for state in &mut self.mouse_button_just_pressed {
          *state = false;
       }
@@ -206,6 +223,10 @@ impl Input {
          *state = false;
       }
       self.char_buffer.clear();
+      if self.cursor != self.previous_cursor {
+         window.set_cursor_icon(self.cursor);
+         self.previous_cursor = self.cursor;
+      }
    }
 
    /// Returns the numeric index of the mouse given button, or `None` if the mouse button is not

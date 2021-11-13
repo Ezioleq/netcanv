@@ -27,17 +27,17 @@
 
 use std::fmt::Write;
 
+use crate::backend::winit::dpi::LogicalSize;
+use crate::backend::winit::event::{Event, WindowEvent};
+use crate::backend::winit::event_loop::{ControlFlow, EventLoop};
+#[cfg(target_family = "unix")]
+use crate::backend::winit::platform::unix::*;
+use crate::backend::winit::window::{CursorIcon, WindowBuilder};
 use backend::Backend;
 use config::UserConfig;
 use native_dialog::{MessageDialog, MessageType};
 use netcanv_renderer::paws::{vector, Layout};
 use nysa::global as bus;
-use winit::dpi::LogicalSize;
-use winit::event::{Event, WindowEvent};
-use winit::event_loop::{ControlFlow, EventLoop};
-#[cfg(target_family = "unix")]
-use winit::platform::unix::*;
-use winit::window::WindowBuilder;
 
 #[cfg(feature = "renderer-opengl")]
 use netcanv_renderer_opengl::UiRenderFrame;
@@ -115,6 +115,7 @@ fn inner_main() -> anyhow::Result<()> {
                   vector(window_size.width as f32, window_size.height as f32),
                   Layout::Freeform,
                );
+               input.set_cursor(CursorIcon::Default);
                // `unwrap()` always succeeds here as app is never None.
                app.as_mut().unwrap().process(StateArgs {
                   ui,
@@ -126,7 +127,7 @@ fn inner_main() -> anyhow::Result<()> {
                Err(error) => eprintln!("render error: {}", error),
                _ => (),
             }
-            input.finish_frame();
+            input.finish_frame(ui.window());
 
             #[cfg(target_family = "unix")]
             for message in &bus::retrieve_all::<SwitchColorScheme>() {

@@ -1,3 +1,5 @@
+pub use winit;
+
 mod common;
 mod font;
 mod framebuffer;

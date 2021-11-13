@@ -153,7 +153,7 @@ impl<'peer> Net<'peer> {
 #[non_exhaustive]
 pub struct ToolArgs<'ui, 'input, 'state> {
    pub ui: &'ui mut Ui,
-   pub input: &'input Input,
+   pub input: &'input mut Input,
    pub assets: &'state Assets,
    pub net: Net<'state>,
 }

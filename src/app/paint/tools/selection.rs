@@ -2,10 +2,11 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::time::Instant;
 
+use crate::backend::winit::event::MouseButton;
+use crate::backend::winit::window::CursorIcon;
 use netcanv_renderer::paws::{point, vector, AlignH, AlignV, Color, Point, Rect, Renderer, Vector};
 use netcanv_renderer::{BlendMode, Font as FontTrait, RenderBackend};
 use serde::{Deserialize, Serialize};
-use winit::event::MouseButton;
 
 use crate::app::paint;
 use crate::assets::Assets;
@@ -196,6 +197,19 @@ impl Tool for SelectionTool {
                }
             }
          }
+      }
+
+      // Update cursors.
+      match self.potential_action {
+         Action::None => (),
+         Action::Selecting => input.set_cursor(CursorIcon::Crosshair),
+         Action::DraggingHandle(handle) => input.set_cursor(match handle {
+            Handle::TopLeft | Handle::BottomRight => CursorIcon::NwseResize,
+            Handle::TopRight | Handle::BottomLeft => CursorIcon::NeswResize,
+            Handle::Top | Handle::Bottom => CursorIcon::RowResize,
+            Handle::Left | Handle::Right => CursorIcon::ColResize,
+         }),
+         Action::DraggingWhole => input.set_cursor(CursorIcon::AllScroll),
       }
 
       // Check if the left mouse button was pressed, and if so, start selecting.
